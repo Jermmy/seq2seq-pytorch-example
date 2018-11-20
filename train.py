@@ -31,6 +31,14 @@ def target2tensor(target):
     return tensor
 
 
+def accuracy(output, target):
+    # print(output)
+    output = np.argmax(output, axis=2)
+    acc = np.equal(output, target)
+    acc = np.mean(acc.astype(np.float))
+    return acc
+
+
 def train_gru(config):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,10 +70,13 @@ def train_gru(config):
         loss.backward()
         optim.step()
 
-        if step % 10 == 0:
+        if step % 100 == 0:
             print("loss === %.4f" % (loss.item() / config.seq_len))
             x_batches = x.detach().cpu().numpy().transpose((1, 0, 2))
-            output = output.detach().cpu().numpy().transpose((1, 0, 2))
+            output = output.detach().cpu().numpy().transpose((1, 0, 2)) # batch_size x seq_len x output_size
+
+            print("Accuracy: %.2f" % (accuracy(output, y_batches)))
+
             x_batches = ''.join([train_dataset.reverse_dictionary[np.argmax(x)] for x in x_batches[0]])
             predict = ''.join([train_dataset.reverse_dictionary[np.argmax(x)] for x in output[0]])
             target = ''.join([train_dataset.reverse_dictionary[x] for x in y_batches[0]])
@@ -77,7 +88,7 @@ def train_gru(config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', type=int, default=1000)
+    parser.add_argument('--epochs', type=int, default=5000)
     parser.add_argument('--seq_len', type=int, default=10)
     parser.add_argument('--hidden_size', type=int, default=10)
     parser.add_argument('--lr', type=float, default=1e-3)
