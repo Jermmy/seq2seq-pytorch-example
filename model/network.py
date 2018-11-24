@@ -40,3 +40,27 @@ class GRU(nn.Module):
 
     def initHidden(self, batch_size):
         return torch.zeros(self.n_layers, batch_size, self.hidden_size)
+
+
+class GRUEmbedding(nn.Module):
+
+    def __init__(self, input_size, embedding_size, hidden_size, output_size, n_layers):
+        super(GRUEmbedding, self).__init__()
+        self.n_layers = n_layers
+        self.hidden_size = hidden_size
+        self.embedding_size = embedding_size
+        self.embedding = nn.Embedding(input_size, embedding_size)
+        self.gru = nn.GRU(embedding_size, hidden_size, n_layers, bidirectional=False)
+        self.i2h = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.LogSoftmax()
+
+    def forward(self, x, hidden):
+        x = self.embedding(x)
+        x = x.squeeze(2)
+        output, hidden = self.gru(x, hidden)
+        output = self.i2h(output)
+        output = self.softmax(output)
+        return output, hidden
+
+    def initHidden(self, batch_size):
+        return torch.zeros(self.n_layers, batch_size, self.hidden_size)
